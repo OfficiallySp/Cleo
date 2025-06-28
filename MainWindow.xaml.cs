@@ -53,40 +53,42 @@ namespace Cleo
                 // Add user message to panel
                 AddMessageToPanel(query, true);
 
-                // Show loading
-                ShowLoading(true);
+                // Create AI response bubble immediately (empty)
+                var aiMessageBubble = CreateMessageBubble("", false);
+                ResponsePanel.Children.Add(aiMessageBubble);
+
+                // Animate the message appearance
+                aiMessageBubble.Opacity = 0;
+                var fadeIn = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(300));
+                aiMessageBubble.BeginAnimation(OpacityProperty, fadeIn);
+
                 StatusText.Text = "Thinking...";
 
                 try
                 {
-                    // Get AI response
-                    var response = await _aiService.GetResponseAsync(query);
-
-                    // Add AI response to panel
-                    AddMessageToPanel(response, false);
-                    StatusText.Text = "Ready";
+                    // Get streaming AI response
+                    await _aiService.GetStreamingResponseAsync(
+                        query,
+                        token =>
+                        {
+                            aiMessageBubble.AppendText(token);
+                            // Auto-scroll to keep the latest content visible
+                            ScrollToBottom();
+                        }, // Called for each token
+                        () => StatusText.Text = "Ready"            // Called when complete
+                    );
                 }
                 catch (Exception ex)
                 {
-                    AddMessageToPanel($"Sorry, I encountered an error: {ex.Message}", false);
+                    aiMessageBubble.SetText($"Sorry, I encountered an error: {ex.Message}");
                     StatusText.Text = "Error occurred";
-                }
-                finally
-                {
-                    ShowLoading(false);
                 }
             }
         }
 
         private void AddMessageToPanel(string message, bool isUser)
         {
-            var messageControl = new MessageBubble
-            {
-                Message = message,
-                IsUser = isUser,
-                Margin = new Thickness(0, 5, 0, 5)
-            };
-
+            var messageControl = CreateMessageBubble(message, isUser);
             ResponsePanel.Children.Add(messageControl);
 
             // Animate the message appearance
@@ -95,9 +97,26 @@ namespace Cleo
             messageControl.BeginAnimation(OpacityProperty, fadeIn);
         }
 
+        private MessageBubble CreateMessageBubble(string message, bool isUser)
+        {
+            return new MessageBubble
+            {
+                Message = message,
+                IsUser = isUser,
+                Margin = new Thickness(0, 5, 0, 5)
+            };
+        }
+
         private void ShowLoading(bool show)
         {
             LoadingIndicator.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        private void ScrollToBottom()
+        {
+            // Find the ScrollViewer parent of the ResponsePanel
+            var parent = ResponsePanel.Parent as ScrollViewer;
+            parent?.ScrollToBottom();
         }
 
         private void VoiceButton_Click(object sender, RoutedEventArgs e)

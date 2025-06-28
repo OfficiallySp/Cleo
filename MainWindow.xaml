@@ -137,7 +137,8 @@
                 </Border>
 
                 <!-- Response Area -->
-                <ScrollViewer Grid.Row="1"
+                <ScrollViewer x:Name="ResponseScrollViewer"
+                            Grid.Row="1"
                             VerticalScrollBarVisibility="Auto"
                             Padding="20">
                     <StackPanel x:Name="ResponsePanel">

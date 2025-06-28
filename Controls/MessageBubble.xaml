@@ -9,7 +9,8 @@
                 CornerRadius="12"
                 Padding="15,10"
                 MaxWidth="500"
-                HorizontalAlignment="Left">
+                HorizontalAlignment="Left"
+                Background="{StaticResource SurfaceColor}">
             <Border.Effect>
                 <DropShadowEffect BlurRadius="10"
                                   ShadowDepth="2"
@@ -20,7 +21,8 @@
             <TextBlock x:Name="MessageText"
                        TextWrapping="Wrap"
                        FontSize="14"
-                       FontFamily="{StaticResource MainFont}"/>
+                       FontFamily="{StaticResource MainFont}"
+                       Foreground="{StaticResource TextColor}"/>
         </Border>
     </Grid>
 </UserControl>

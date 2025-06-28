@@ -31,6 +31,22 @@ namespace Cleo.Controls
             InitializeComponent();
         }
 
+        public void AppendText(string text)
+        {
+            Dispatcher.Invoke(() =>
+            {
+                MessageText.Text += text;
+            });
+        }
+
+        public void SetText(string text)
+        {
+            Dispatcher.Invoke(() =>
+            {
+                MessageText.Text = text;
+            });
+        }
+
         private static void OnMessageChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
             if (d is MessageBubble bubble)

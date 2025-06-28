@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
@@ -16,54 +17,92 @@ namespace Cleo.Services
             _httpClient = new HttpClient();
             _httpClient.Timeout = TimeSpan.FromSeconds(30);
 
-            // Assuming the model is running locally on port 11434 (Ollama default)
-            _modelEndpoint = "http://localhost:11434/api/generate";
+            // Use the chat endpoint for proper streaming support
+            _modelEndpoint = "http://localhost:11434/api/chat";
         }
 
-        public async Task<string> GetResponseAsync(string prompt)
+        public async Task GetStreamingResponseAsync(string prompt, Action<string> onTokenReceived, Action onComplete)
         {
             try
             {
                 var request = new
                 {
-                    model = "smollm2:135m-instruct-q3_K_S",
-                    prompt = prompt,
-                    stream = false,
+                    model = "smollm2:135m-instruct-q8_0",
+                    messages = new[]
+                    {
+                        new { role = "system", content = "You are Cleo, a friendly and intelligent AI assistant. You help users with their questions and tasks in a conversational, helpful manner. Always be polite, clear, and concise in your responses. If you're unsure about something, it's okay to say so rather than guess. You aim to be genuinely helpful while maintaining a warm, approachable tone." },
+                        new { role = "user", content = prompt }
+                    },
+                    stream = true,
                     options = new
                     {
-                        temperature = 0.7,
-                        top_p = 0.9,
-                        max_tokens = 500
+                        temperature = 0.3, // Lower temperature for more consistent responses
+                        top_p = 0.8,
+                        top_k = 20,
+                        num_predict = 300,
+                        repeat_penalty = 1.1
                     }
                 };
 
                 var json = JsonConvert.SerializeObject(request);
                 var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-                var response = await _httpClient.PostAsync(_modelEndpoint, content);
+                using var response = await _httpClient.PostAsync(_modelEndpoint, content);
 
                 if (response.IsSuccessStatusCode)
                 {
-                    var responseJson = await response.Content.ReadAsStringAsync();
-                    dynamic? result = JsonConvert.DeserializeObject(responseJson);
-                    return result?.response?.ToString() ?? "I couldn't generate a response.";
+                    using var stream = await response.Content.ReadAsStreamAsync();
+                    using var reader = new StreamReader(stream);
+
+                    string? line;
+                    while ((line = await reader.ReadLineAsync()) != null)
+                    {
+                        if (string.IsNullOrWhiteSpace(line)) continue;
+
+                        try
+                        {
+                            dynamic? result = JsonConvert.DeserializeObject(line);
+                            var token = result?.message?.content?.ToString();
+
+                            if (!string.IsNullOrEmpty(token))
+                            {
+                                onTokenReceived(token);
+                            }
+
+                            // Check if this is the final response
+                            if (result?.done == true)
+                            {
+                                onComplete();
+                                break;
+                            }
+                        }
+                        catch (JsonException)
+                        {
+                            // Skip malformed JSON lines
+                            continue;
+                        }
+                    }
                 }
                 else
                 {
-                    return $"Error: Unable to connect to the AI model. Make sure Ollama is running with the smollm2 model.";
+                    onTokenReceived($"Error: Unable to connect to the AI model. Make sure Ollama is running with the smollm2 model.");
+                    onComplete();
                 }
             }
             catch (HttpRequestException)
             {
-                return "Connection error: Please ensure Ollama is running locally on port 11434.";
+                onTokenReceived("Connection error: Please ensure Ollama is running locally on port 11434.");
+                onComplete();
             }
             catch (TaskCanceledException)
             {
-                return "The request timed out. The model might be taking too long to respond.";
+                onTokenReceived("The request timed out. The model might be taking too long to respond.");
+                onComplete();
             }
             catch (Exception ex)
             {
-                return $"An unexpected error occurred: {ex.Message}";
+                onTokenReceived($"An unexpected error occurred: {ex.Message}");
+                onComplete();
             }
         }
 

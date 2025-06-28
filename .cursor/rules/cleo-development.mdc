@@ -3,3 +3,164 @@ description:
 globs:
 alwaysApply: false
 ---
+# Cleo Development Rules
+
+## Project Overview
+Cleo is a Windows desktop AI assistant application built with C# and WPF, featuring:
+- System tray integration for always-available access
+- Spotlight-like overlay UI with smooth animations
+- Voice and text input capabilities
+- Integration with local AI models via Ollama
+
+## Architecture Guidelines
+
+### Technology Stack
+- **Framework**: .NET 8.0 with WPF for UI
+- **UI Library**: WPF for rich desktop experience with animations
+- **System Integration**: Windows Forms for NotifyIcon (system tray)
+- **AI Integration**: HTTP client communicating with Ollama API
+- **Voice**: System.Speech for speech recognition
+
+### Project Structure
+```
+Cleo/
+├── [App.xaml](mdc:App.xaml) - Application entry point and global resources
+├── [App.xaml.cs](mdc:App.xaml.cs) - Application initialization and lifecycle
+├── [MainWindow.xaml](mdc:MainWindow.xaml) - Main overlay window UI
+├── [MainWindow.xaml.cs](mdc:MainWindow.xaml.cs) - Window logic and event handlers
+├── Services/
+│   ├── [AIService.cs](mdc:Services/AIService.cs) - AI model communication
+│   └── [SystemTrayManager.cs](mdc:Services/SystemTrayManager.cs) - System tray handling
+├── Helpers/
+│   └── [HotKeyManager.cs](mdc:Helpers/HotKeyManager.cs) - Global hotkey registration
+├── Controls/
+│   ├── [MessageBubble.xaml](mdc:Controls/MessageBubble.xaml) - Chat message UI
+│   └── [MessageBubble.xaml.cs](mdc:Controls/MessageBubble.xaml.cs) - Message control logic
+└── Styles/
+    ├── [ModernStyles.xaml](mdc:Styles/ModernStyles.xaml) - UI component styles
+    └── [Animations.xaml](mdc:Styles/Animations.xaml) - Animation definitions
+```
+
+## Development Principles
+
+### 1. Performance First
+- **Startup Speed**: App should be ready within 1 second
+- **Response Time**: UI interactions < 100ms
+- **Memory Usage**: Keep under 50MB when idle
+- **Animation**: Use GPU-accelerated WPF animations
+
+### 2. User Experience
+- **Accessibility**: Keyboard-first navigation (Ctrl+Space to show, ESC to hide)
+- **Visual Feedback**: Every action should have immediate visual response
+- **Error Handling**: Graceful degradation when AI service unavailable
+- **Animations**: Smooth, purposeful animations that enhance usability
+
+### 3. Code Quality
+- **Async/Await**: All I/O operations must be async
+- **MVVM Pattern**: Separate UI from business logic where appropriate
+- **Dependency Injection**: Services should be injectable for testability
+- **Resource Management**: Proper disposal of unmanaged resources
+
+## AI Integration Guidelines
+
+### Ollama Communication
+- Default endpoint: `http://localhost:11434/api/generate`
+- Model: `smollm2:135m-instruct-q3_K_S`
+- Timeout: 30 seconds for responses
+- Error messages should guide users to solutions
+
+### Request Format
+```csharp
+var request = new
+{
+    model = "smollm2:135m-instruct-q3_K_S",
+    prompt = userInput,
+    stream = false,
+    options = new
+    {
+        temperature = 0.7,
+        top_p = 0.9,
+        max_tokens = 500
+    }
+};
+```
+
+## UI/UX Standards
+
+### Color Palette
+- Primary: `#6C63FF` (Purple)
+- Secondary: `#FF6B6B` (Coral)
+- Background: `#1A1A2E` (Dark Blue)
+- Surface: `#16213E` (Darker Blue)
+- Text: `#EAEAEA` (Light Gray)
+- Subtle Text: `#B0B0B0` (Medium Gray)
+
+### Animation Timing
+- Fade In: 200-300ms with cubic easing
+- Fade Out: 150ms for quick dismissal
+- Message Appearance: 300ms fade
+- Loading States: Indeterminate progress with subtle animation
+
+### Window Behavior
+- Always centered on screen
+- Semi-transparent background (50% black)
+- Loses focus = auto-hide
+- No taskbar presence
+- Always on top when visible
+
+## Common Tasks
+
+### Adding New Commands
+1. Update [MainWindow.xaml.cs](mdc:MainWindow.xaml.cs) to handle new input patterns
+2. Extend [AIService.cs](mdc:Services/AIService.cs) if special processing needed
+3. Add visual feedback in UI for new command types
+
+### Modifying Hotkeys
+1. Edit [App.xaml.cs](mdc:App.xaml.cs) in `InitializeHotKeys()` method
+2. Use [HotKeyManager.cs](mdc:Helpers/HotKeyManager.cs) RegisterHotKey method
+3. Update README.md with new hotkey documentation
+
+### Styling Components
+1. Add new styles to [ModernStyles.xaml](mdc:Styles/ModernStyles.xaml)
+2. Define animations in [Animations.xaml](mdc:Styles/Animations.xaml)
+3. Apply styles using `Style="{StaticResource StyleName}"`
+
+## Testing Guidelines
+
+### Manual Testing Checklist
+- [ ] Ctrl+Space opens window from any application
+- [ ] ESC closes window immediately
+- [ ] Voice input captures speech correctly
+- [ ] AI responses appear within 3 seconds
+- [ ] System tray icon shows context menu
+- [ ] Window appears centered on multi-monitor setups
+- [ ] Animations are smooth at 60fps
+
+### Performance Testing
+- Measure startup time: `dotnet run --configuration Release`
+- Monitor memory usage in Task Manager
+- Check CPU usage during animations
+- Verify no memory leaks after extended use
+
+## Debugging Tips
+
+### Common Issues
+1. **"Ollama not found"**: Check if Ollama service is running
+2. **Voice not working**: Verify microphone permissions in Windows
+3. **Hotkey conflicts**: Other apps may use Ctrl+Space
+4. **High DPI issues**: Test on different display scales
+
+### Debug Output
+Add logging to [AIService.cs](mdc:Services/AIService.cs):
+```csharp
+System.Diagnostics.Debug.WriteLine($"AI Request: {prompt}");
+System.Diagnostics.Debug.WriteLine($"AI Response: {response}");
+```
+
+## Future Enhancements
+- Plugin system for extending functionality
+- Theme customization
+- Multi-language support
+- Cloud model integration option
+- Conversation history persistence
+- Custom AI model configuration UI
