@@ -3,6 +3,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media.Animation;
+using System.Windows.Threading;
 using System.Speech.Recognition;
 using Cleo.Services;
 using Cleo.Controls;
@@ -13,6 +14,7 @@ namespace Cleo
     {
         private readonly AIService _aiService;
         private readonly SpeechRecognitionEngine _speechRecognizer;
+        private readonly DispatcherTimer _resetTimer;
         private bool _isListening = false;
 
         public MainWindow()
@@ -20,6 +22,11 @@ namespace Cleo
             InitializeComponent();
             _aiService = new AIService();
             _speechRecognizer = InitializeSpeechRecognition();
+
+            // Initialize chat reset timer (5 second delay)
+            _resetTimer = new DispatcherTimer();
+            _resetTimer.Interval = TimeSpan.FromSeconds(5);
+            _resetTimer.Tick += OnResetTimerTick;
         }
 
         private SpeechRecognitionEngine InitializeSpeechRecognition()
@@ -34,6 +41,9 @@ namespace Cleo
 
         public void ShowAndActivate()
         {
+            // Stop the reset timer if it's running (user is showing window again)
+            _resetTimer.Stop();
+
             Show();
             Activate();
             InputTextBox.Focus();
@@ -195,13 +205,54 @@ namespace Cleo
         private void HideWindow()
         {
             var fadeOut = (Storyboard)FindResource("FadeOut");
-            fadeOut.Completed += (s, e) => Hide();
+            fadeOut.Completed += (s, e) =>
+            {
+                Hide();
+                // Start the reset timer when window is hidden
+                _resetTimer.Start();
+            };
             fadeOut.Begin(this);
         }
 
         private void InputTextBox_TextChanged(object sender, TextChangedEventArgs e)
         {
             // Could implement real-time suggestions here
+        }
+
+        private void OnResetTimerTick(object? sender, EventArgs e)
+        {
+            // Stop the timer
+            _resetTimer.Stop();
+
+            // Reset the chat by clearing all messages except the welcome messages
+            ResetChat();
+        }
+
+                private void ResetChat()
+        {
+            // Clear all messages from the response panel
+            ResponsePanel.Children.Clear();
+
+            // Add back the welcome messages
+            var welcomeMessage1 = new TextBlock
+            {
+                Text = "Hi! I'm Cleo, your AI assistant.",
+                Foreground = (System.Windows.Media.Brush)FindResource("TextColor"),
+                FontSize = 16,
+                TextWrapping = TextWrapping.Wrap,
+                Margin = new Thickness(0, 20, 0, 10)
+            };
+
+            var welcomeMessage2 = new TextBlock
+            {
+                Text = "Type or speak your question, and I'll help you out!",
+                Foreground = (System.Windows.Media.Brush)FindResource("SubtleTextColor"),
+                FontSize = 14,
+                TextWrapping = TextWrapping.Wrap
+            };
+
+            ResponsePanel.Children.Add(welcomeMessage1);
+            ResponsePanel.Children.Add(welcomeMessage2);
         }
     }
 }

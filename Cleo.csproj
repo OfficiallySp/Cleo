@@ -8,6 +8,8 @@
     <!-- <ApplicationIcon>Assets/cleo.ico</ApplicationIcon> -->
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <!-- Suppress runtime identifier warning for Microsoft.CognitiveServices.Speech -->
+    <NoWarn>$(NoWarn);NETSDK1206</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
