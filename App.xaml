@@ -1,0 +1,25 @@
+<Application x:Class="Cleo.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             StartupUri="MainWindow.xaml"
+             ShutdownMode="OnExplicitShutdown">
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="Styles/ModernStyles.xaml"/>
+                <ResourceDictionary Source="Styles/Animations.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+
+            <!-- Global Colors -->
+            <SolidColorBrush x:Key="PrimaryColor" Color="#6C63FF"/>
+            <SolidColorBrush x:Key="SecondaryColor" Color="#FF6B6B"/>
+            <SolidColorBrush x:Key="BackgroundColor" Color="#1A1A2E"/>
+            <SolidColorBrush x:Key="SurfaceColor" Color="#16213E"/>
+            <SolidColorBrush x:Key="TextColor" Color="#EAEAEA"/>
+            <SolidColorBrush x:Key="SubtleTextColor" Color="#B0B0B0"/>
+
+            <!-- Global Fonts -->
+            <FontFamily x:Key="MainFont">Segoe UI</FontFamily>
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>
